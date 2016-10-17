@@ -10,8 +10,7 @@ class TestSpider(CrawlSpider):
     name = "kohsantepheap"
     allowed_domains = ["kohsantepheapdaily.com.kh"]
     start_urls = [
-    'https://kohsantepheapdaily.com.kh/category/local-news/',
-    'https://kohsantepheapdaily.com.kh/category/international-news/',
+    'https://kohsantepheapdaily.com.kh/category/local-news/'
     ]
 
     def parse(self, response):
@@ -21,17 +20,11 @@ class TestSpider(CrawlSpider):
         articles = hxs.xpath('//div[@class="articleItem"]')
         for article in articles:
             item = KohsantepheapItem()
-            if "local-news" in response.url:
-                item['categoryId'] = '1'
-            else:
-                item['categoryId'] = '2'
+            item['categoryId'] = '1'
             text = article.xpath('div[@class="articleText"]')
             if not text:
                 print('KSP => [' + now + '] No Text Container')
 
-            image = article.xpath('div[@class="articleImage"]')
-            if not image:
-                print('KSP => [' + now + '] No Image Container')
 
             name = text.xpath('h4/a/text()')
             if not name:
@@ -39,11 +32,12 @@ class TestSpider(CrawlSpider):
             else:
                 item['name'] = name.extract()[0]
 
-            description = text.xpath('p/text()')
+            description = text.xpath('p[2]/text()')
             if not description:
                 print('KSP => [' + now + '] No description')
+                item['description'] = ''
             else:
-                item['description'] = description[1].extract()
+                item['description'] = description.extract()[0]
 
             url = text.xpath("h4/a/@href")
             if not url:
@@ -51,9 +45,9 @@ class TestSpider(CrawlSpider):
             else:
                 item['url'] = 'https://kohsantepheapdaily.com.kh' + url.extract()[0]
 
-            imageUrl = image.xpath('a/img/@src')
+            imageUrl = article.xpath('div[@class="articleImage"][1]/a[1]/img[1]/@src')
             if not imageUrl:
-                print('KSP => [' + now + '] No imageUrl')
+                print('KSP => [' + now + '] No Image Url')
             else:
                 item['imageUrl'] = imageUrl.extract()[0]
 
