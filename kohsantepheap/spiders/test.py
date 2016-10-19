@@ -6,6 +6,8 @@ from scrapy.linkextractors import LinkExtractor
 import time
 import lxml.etree
 import lxml.html
+from stripogram import html2text, html2safehtml
+from htmlmin import minify
 
 
 class TestSpider(CrawlSpider):
@@ -67,8 +69,13 @@ class TestSpider(CrawlSpider):
             if ads:
                 for ad in ads:
                     ad.drop_tag()
-            htmlcontent = lxml.html.tostring(p, encoding=unicode)
+
+            uncleanhtml = lxml.html.tostring(p, encoding=unicode)
+            clean_html = html2safehtml(uncleanhtml,valid_tags=("p", "img"))
+            minifyhtml = minify(clean_html)
+            htmlcontent = minifyhtml
+
 
         item['htmlcontent'] = htmlcontent
-        print item['htmlcontent']
+        # print item['htmlcontent']
         yield item
