@@ -4,6 +4,8 @@ from scrapy.spiders import CrawlSpider, Rule
 from kohsantepheap.items import KohsantepheapItem
 from scrapy.linkextractors import LinkExtractor
 import time
+import lxml.etree
+import lxml.html
 
 
 class TestSpider(CrawlSpider):
@@ -51,16 +53,22 @@ class TestSpider(CrawlSpider):
             else:
                 item['imageUrl'] = imageUrl.extract()[0]
 
-            yield item
+            request = scrapy.Request(item['url'], callback=self.parse_detail)
+            request.meta['item'] = item
+            yield request
 
     def parse_detail(self, response):
         item = response.meta['item']
-        hxs = scrapy.Selector(response)
-        description = hxs.xpath('//div[@id="fullArticle"]/p/text()').extract()
-        new_description = '';
-        for node in description:
-            new_description += node
-        item['description'] = new_description
-        image_urls = hxs.xpath('//a[@data-fancybox-group="gallery"]/img/@src').extract()
-        item['imageUrl'] = image_urls
+        root = lxml.html.fromstring(response.body)
+        lxml.etree.strip_elements(root, lxml.etree.Comment, "script", "head")
+        htmlcontent = ''
+        for p in root.xpath('//div[@id="fullArticle"][1]'):
+            ads = p.xpath('div[@class="fb-ad" or @id="ad_root" or @class="fb-like"]')
+            if ads:
+                for ad in ads:
+                    ad.drop_tag()
+            htmlcontent = lxml.html.tostring(p, encoding=unicode)
+
+        item['htmlcontent'] = htmlcontent
+        print item['htmlcontent']
         yield item
